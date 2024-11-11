@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trie Autocompletar</title>
+</head>
+<body>
+    <h1>Sistema de Autocompletar com Trie</h1>
+    <input type="text" id="search" placeholder="Digite para buscar...">
+    <div id="suggestions"></div>
+
+    <script>
+        // Definição da TrieNode e Trie (código da Trie.js)
+        class TrieNode {
+            constructor() {
+                this.children = {};
+                this.isEndOfWord = false;
+                this.wordCount = 0;
+            }
+        }
+
+        class Trie {
+            constructor() {
+                this.root = new TrieNode();
+            }
+
+            insert(word) {
+                let node = this.root;
+                for (let char of word) {
+                    if (!node.children[char]) {
+                        node.children[char] = new TrieNode();
+                    }
+                    node = node.children[char];
+                    node.wordCount += 1;
+                }
+                node.isEndOfWord = true;
+            }
+
+            searchByPrefix(prefix, maxResults, page = 1) {
+                let node = this.root;
+                for (let char of prefix) {
+                    if (!node.children[char]) {
+                        return [];
+                    }
+                    node = node.children[char];
+                }
+                return this.collectWords(node, prefix, maxResults, page);
+            }
+
+            collectWords(node, prefix, limit, page) {
+                let words = [];
+                this.collectWordsHelper(node, prefix, words, limit, page, 0);
+                return words;
+            }
+
+            collectWordsHelper(node, prefix, words, limit, page, currentCount) {
+                if (words.length >= limit) return currentCount;
+                if (node.isEndOfWord) {
+                    if (currentCount >= (page - 1) * limit) {
+                        words.push(prefix);
+                    }
+                    currentCount++;
+                }
+                for (let char in node.children) {
+                    if (words.length >= limit) break;
+                    currentCount = this.collectWordsHelper(node.children[char], prefix + char, words, limit, page, currentCount);
+                }
+                return currentCount;
+            }
+        }
+
+        // Inicializa a Trie e insere palavras
+        const trie = new Trie();
+        const words = ["cachorro", "carro", "casa", "cadeira", "computador", "camiseta", "cabide", "café", "canoa", "cavalo"];
+        words.forEach(word => trie.insert(word));
+
+        // Referência aos elementos do DOM
+        const searchInput = document.getElementById("search");
+        const suggestionsDiv = document.getElementById("suggestions");
+
+        // Função para mostrar as sugestões
+        function showSuggestions(prefix) {
+            const suggestions = trie.searchByPrefix(prefix, 5, 1); // Limite de 5 sugestões
+            suggestionsDiv.innerHTML = suggestions.length
+                ? `<ul>${suggestions.map(s => `<li>${s}</li>`).join('')}</ul>`
+                : "<p>Nenhuma sugestão</p>";
+        }
+
+        // Evento para atualizar sugestões enquanto o usuário digita
+        searchInput.addEventListener("input", (e) => {
+            const prefix = e.target.value;
+            if (prefix) {
+                showSuggestions(prefix);
+            } else {
+                suggestionsDiv.innerHTML = "";
+            }
+        });
+    </script>
+</body>
+</html>
